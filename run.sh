@@ -1,5 +1,5 @@
 #!/bin/sh
-export DETECTRON2_DATASETS=../OV_seg
+export DETECTRON2_DATASETS=../datasets
 config=$1
 gpus=$2
 output=$3
