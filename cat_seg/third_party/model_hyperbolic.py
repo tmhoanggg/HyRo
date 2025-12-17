@@ -152,6 +152,7 @@ class ModifiedResNet(nn.Module):
 
         return x
 
+
 class LayerNorm(nn.LayerNorm):
     """Subclass torch's LayerNorm to handle fp16."""
 
@@ -180,6 +181,7 @@ class ResidualAttentionBlock(nn.Module):
         self.ln_2 = LayerNorm(d_model)
         self.attn_mask = attn_mask
         self.mask_pre_mlp = True
+        
     def attention(self, x: torch.Tensor):
         self.attn_mask = self.attn_mask.to(dtype=x.dtype, device=x.device) if self.attn_mask is not None else None
         return self.attn(x, x, x, need_weights=False, attn_mask=self.attn_mask)[0]
@@ -214,6 +216,7 @@ class ResidualAttentionBlock(nn.Module):
             v = torch.cat((v[0:1, :, :], v[prompt + 1: :, :]), dim=0)
         return v
 
+
 class Transformer(nn.Module):
     def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None):
         super().__init__()
@@ -224,7 +227,7 @@ class Transformer(nn.Module):
     def forward(self, x: torch.Tensor, dense=False, prompt=None):
         for i, resblock in enumerate(self.resblocks):
             if i == self.layers - 1 and dense:
-                    x = resblock.forward_dense(x)
+                x = resblock.forward_dense(x)
             else:
                 x = resblock(x)
         return x

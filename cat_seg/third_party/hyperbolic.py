@@ -39,7 +39,10 @@ class BlockDiagonalLinear_text(nn.Module):
         self.weights = nn.Parameter(torch.stack([
             torch.diag(torch.ones(block_size)) for _ in range(self.r)
         ]))
-        self.out_features = out_features
+
+        # Angle Adjustment Parameter
+        self.rotation_weights = nn.Parameter(torch.zeros(out_features, out_features))
+
 
     def block_diagonal(self, R):
         if len(R.shape) == 2:
@@ -53,6 +56,15 @@ class BlockDiagonalLinear_text(nn.Module):
         A = torch.block_diag(*blocks)
 
         return A
+    
+    def get_orthogonal_matrix(self):
+        """
+        Generates an orthogonal matrix R from the unconstrained parameter theta.
+        R = exp(A), where A = theta - theta^T (Skew-Symmetric)
+        """
+        A = self.rotation_weights - self.rotation_weights.transpose(-1, -2)
+        R = torch.matrix_exp(A)
+        return R
 
     def exp_map0(self, x: Tensor, eps: float = 1e-8) -> Tensor:
         """
@@ -139,6 +151,7 @@ class BlockDiagonalLinear_text(nn.Module):
         cond = norm > maxnorm
         projected = x / norm * maxnorm
         return torch.where(cond, projected, x)
+    
     def mobius_add(self, x, y):
         x2 = x.pow(2).sum(dim=-1, keepdim=True)
         y2 = y.pow(2).sum(dim=-1, keepdim=True)
@@ -149,7 +162,6 @@ class BlockDiagonalLinear_text(nn.Module):
 
     def tanh(self, x, clamp=15):
         return x.clamp(-clamp, clamp).tanh()
-    
 
     def forward(self, x, visual=False):
         # 确保输入形状为 (batch_size, 512, 512)
@@ -159,7 +171,9 @@ class BlockDiagonalLinear_text(nn.Module):
         orig_dtype = fix_filt.dtype
         block_diagonal_weight = self.block_diagonal(self.weights)
         output_hyperbolic_filt = self.mobius_matvec(block_diagonal_weight.to(orig_dtype), fix_filt)
-        output_euclidean = self.logmap0(output_hyperbolic_filt)
+        rotation_weights = self.get_orthogonal_matrix().to(orig_dtype) # Add: Rotation
+        output_hyperbolic_rotated = output_hyperbolic_filt @ rotation_weights.transpose(-1, -2) # Add: rotate
+        output_euclidean = self.logmap0(output_hyperbolic_rotated)
         return output_euclidean
 
 
@@ -178,6 +192,9 @@ class BlockDiagonalLinear(nn.Module):
             torch.diag(torch.ones(block_size)) for _ in range(self.r)
         ]))
 
+        # Angle Adjustment Parameter
+        self.rotation_weights = nn.Parameter(torch.zeros(out_features, out_features))
+
     def block_diagonal(self, R):
         if len(R.shape) == 2:
             # Create a list of R repeated block_count times
@@ -190,6 +207,15 @@ class BlockDiagonalLinear(nn.Module):
         A = torch.block_diag(*blocks)
 
         return A
+    
+    def get_orthogonal_matrix(self):
+        """
+        Generates an orthogonal matrix R from the unconstrained parameter theta.
+        R = exp(A), where A = theta - theta^T (Skew-Symmetric)
+        """
+        A = self.rotation_weights - self.rotation_weights.transpose(-1, -2)
+        R = torch.matrix_exp(A)
+        return R
 
     def exp_map0(self, x: Tensor, eps: float = 1e-8) -> Tensor:
         """
@@ -295,7 +321,9 @@ class BlockDiagonalLinear(nn.Module):
         orig_dtype = fix_filt.dtype
         block_diagonal_weight = self.block_diagonal(self.weights)
         output_hyperbolic_filt_stretch = self.mobius_matvec(block_diagonal_weight.to(orig_dtype), fix_filt)
-        output_euclidean = self.logmap0(output_hyperbolic_filt_stretch)
+        rotation_weights = self.get_orthogonal_matrix().to(orig_dtype) # Add: Rotation weights
+        output_hyperbolic_rotated = output_hyperbolic_filt_stretch @ rotation_weights.transpose(-1, -2) # Add: rotate 
+        output_euclidean = self.logmap0(output_hyperbolic_rotated)
         return output_euclidean
 
 

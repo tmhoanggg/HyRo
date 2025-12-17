@@ -12,8 +12,7 @@ from detectron2.modeling.backbone import Backbone
 from detectron2.modeling.postprocessing import sem_seg_postprocess
 from detectron2.structures import ImageList
 from detectron2.utils.memory import _ignore_torch_cuda_oom
-#from .third_party.oft import set_oft
-#from .third_party.model_oft import ResidualAttentionBlock
+
 from einops import rearrange
 
 @META_ARCH_REGISTRY.register()
@@ -84,6 +83,8 @@ class CATSeg(nn.Module):
                     params.requires_grad = False
             else:
                 params.requires_grad = False
+
+        # Count params
         trainable_params = 0
         for name, params in self.sem_seg_head.predictor.clip_model.named_parameters():
             #if "visual" in name:
@@ -91,6 +92,7 @@ class CATSeg(nn.Module):
                 print(name)
                 trainable_params += params.numel()
         print(f"trainable params: {trainable_params}")
+
         self.sliding_window = sliding_window
         self.clip_resolution = (384, 384) if clip_pretrained == "ViT-B/16" else (336, 336)
 
