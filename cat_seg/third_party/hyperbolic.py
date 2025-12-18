@@ -41,7 +41,10 @@ class BlockDiagonalLinear_text(nn.Module):
         ]))
 
         # Angle Adjustment Parameter
-        self.rotation_weights = nn.Parameter(torch.zeros(out_features, out_features))
+        #self.rotation_weights = nn.Parameter(torch.zeros(out_features, out_features))
+        self.rotation_weights = nn.Parameter(
+            torch.zeros(self.r, block_size, block_size)
+        )
 
 
     def block_diagonal(self, R):
@@ -61,12 +64,20 @@ class BlockDiagonalLinear_text(nn.Module):
         """
         Generates an orthogonal matrix R from the unconstrained parameter theta.
         R = exp(A), where A = theta - theta^T (Skew-Symmetric)
-        """
+        """          
         A = self.rotation_weights - self.rotation_weights.transpose(-1, -2)
-        # Use Cayley transform
-        I = torch.eye(A.shape[0], device=A.device, dtype=A.dtype)
-        R = torch.linalg.solve(I - A, I + A)
-        #R = torch.matrix_exp(A)
+        
+        # Option 1: Basic formulation
+        # R = torch.matrix_exp(A)
+        
+        # Option 2: Use Cayley transform
+        # I = torch.eye(A.shape[0], device=A.device, dtype=A.dtype)
+        # R = torch.linalg.solve(I - A, I + A)
+
+        # Option 3: Use block-diagonal with Cayley transform
+        I = torch.eye(self.block_size, device=A.device, dtype=A.dtype).unsqueeze(0)
+        R_blocks = torch.linalg.solve(I - A, I + A)
+        R = torch.block_diag(*R_blocks)
         return R
 
     def exp_map0(self, x: Tensor, eps: float = 1e-8) -> Tensor:
@@ -196,7 +207,10 @@ class BlockDiagonalLinear(nn.Module):
         ]))
 
         # Angle Adjustment Parameter
-        self.rotation_weights = nn.Parameter(torch.zeros(out_features, out_features))
+        #self.rotation_weights = nn.Parameter(torch.zeros(out_features, out_features))
+        self.rotation_weights = nn.Parameter(
+            torch.zeros(self.r, block_size, block_size)
+        )
 
     def block_diagonal(self, R):
         if len(R.shape) == 2:
@@ -219,8 +233,12 @@ class BlockDiagonalLinear(nn.Module):
         A = self.rotation_weights - self.rotation_weights.transpose(-1, -2)
         #R = torch.matrix_exp(A)
         # Use Cayley transform
-        I = torch.eye(A.shape[0], device=A.device, dtype=A.dtype)
-        R = torch.linalg.solve(I - A, I + A)
+        # I = torch.eye(A.shape[0], device=A.device, dtype=A.dtype)
+        # R = torch.linalg.solve(I - A, I + A)
+
+        I = torch.eye(self.block_size, device=A.device, dtype=A.dtype).unsqueeze(0)
+        R_blocks = torch.linalg.solve(I - A, I + A)
+        R = torch.block_diag(*R_blocks)
         return R
 
     def exp_map0(self, x: Tensor, eps: float = 1e-8) -> Tensor:
