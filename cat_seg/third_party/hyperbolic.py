@@ -217,7 +217,10 @@ class BlockDiagonalLinear(nn.Module):
         R = exp(A), where A = theta - theta^T (Skew-Symmetric)
         """
         A = self.rotation_weights - self.rotation_weights.transpose(-1, -2)
-        R = torch.matrix_exp(A)
+        #R = torch.matrix_exp(A)
+        # Use Cayley transform
+        I = torch.eye(A.shape[0], device=A.device, dtype=A.dtype)
+        R = torch.linalg.solve(I - A, I + A)
         return R
 
     def exp_map0(self, x: Tensor, eps: float = 1e-8) -> Tensor:
