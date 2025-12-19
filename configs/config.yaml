@@ -32,14 +32,14 @@ DATASETS:
   TEST: ("coco_2017_test_stuff_all_sem_seg",)
 SOLVER:
   IMS_PER_BATCH: 4
-  BASE_LR: 0.001 #0.0002
+  BASE_LR: 0.0002
   MAX_ITER: 80000
   WARMUP_FACTOR: 1.0
   WARMUP_ITERS: 0
   WEIGHT_DECAY: 0.0001
   OPTIMIZER: "ADAMW" # You can change this to "SGD" or "ADAN"
   LR_SCHEDULER_NAME: "WarmupCosineLR"
-  BACKBONE_MULTIPLIER: 0.2
+  BACKBONE_MULTIPLIER: 0.01
   CLIP_MULTIPLIER: 0.01
 
   # --- SGD Specific Parameters ---
