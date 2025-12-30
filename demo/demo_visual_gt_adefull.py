@@ -47,7 +47,7 @@ def get_parser():
     parser = argparse.ArgumentParser(description="Detectron2 demo for builtin configs")
     parser.add_argument(
         "--config-file",
-        default="configs/ade20k-150/maskformer_R50_bs16_160k.yaml",
+        default="configs/vitb_384_hyperbolic.yaml",
         metavar="FILE",
         help="path to config file",
     )

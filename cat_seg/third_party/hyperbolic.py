@@ -28,7 +28,7 @@ def artanh(x):
 
 
 class BlockDiagonalLinear_text(nn.Module):
-    def __init__(self, block_size, in_features, out_features, curvature: float = 0.01):
+    def __init__(self, block_size, in_features, out_features, curvature: float = 0.01, rot_block_size: int = 256):
         super(BlockDiagonalLinear_text, self).__init__()
         self.block_size = block_size
         self.r = int(out_features / block_size)
@@ -41,9 +41,10 @@ class BlockDiagonalLinear_text(nn.Module):
         ]))
 
         # Angle Adjustment Parameter
-        #self.rotation_weights = nn.Parameter(torch.zeros(out_features, out_features))
+        self.rot_block_size = rot_block_size
+        self.r_rot = out_features // self.rot_block_size
         self.rotation_weights = nn.Parameter(
-            torch.zeros(self.r, block_size, block_size)
+            torch.zeros(self.r_rot, block_size, block_size)
         )
 
 
@@ -75,7 +76,7 @@ class BlockDiagonalLinear_text(nn.Module):
         # R = torch.linalg.solve(I - A, I + A)
 
         # Option 3: Use block-diagonal with Cayley transform
-        I = torch.eye(self.block_size, device=A.device, dtype=A.dtype).unsqueeze(0)
+        I = torch.eye(self.rot_block_size, device=A.device, dtype=A.dtype).unsqueeze(0)
         R_blocks = torch.linalg.solve(I - A, I + A)
         R = torch.block_diag(*R_blocks)
         return R
@@ -194,7 +195,7 @@ class BlockDiagonalLinear_text(nn.Module):
 
 
 class BlockDiagonalLinear(nn.Module):
-    def __init__(self, block_size, in_features, out_features, curvature: float = 2.5):
+    def __init__(self, block_size, in_features, out_features, curvature: float = 2.5, rot_block_size: int = 256):
         super(BlockDiagonalLinear, self).__init__()
         self.block_size = block_size
         self.r = int(out_features / block_size)
@@ -207,9 +208,10 @@ class BlockDiagonalLinear(nn.Module):
         ]))
 
         # Angle Adjustment Parameter
-        #self.rotation_weights = nn.Parameter(torch.zeros(out_features, out_features))
+        self.rot_block_size = rot_block_size
+        self.r_rot = out_features // self.rot_block_size
         self.rotation_weights = nn.Parameter(
-            torch.zeros(self.r, block_size, block_size)
+            torch.zeros(self.r_rot, block_size, block_size)
         )
 
     def block_diagonal(self, R):
@@ -236,7 +238,7 @@ class BlockDiagonalLinear(nn.Module):
         # I = torch.eye(A.shape[0], device=A.device, dtype=A.dtype)
         # R = torch.linalg.solve(I - A, I + A)
 
-        I = torch.eye(self.block_size, device=A.device, dtype=A.dtype).unsqueeze(0)
+        I = torch.eye(self.rot_block_size, device=A.device, dtype=A.dtype).unsqueeze(0)
         R_blocks = torch.linalg.solve(I - A, I + A)
         R = torch.block_diag(*R_blocks)
         return R
@@ -399,12 +401,15 @@ def oft_forward_vision_init(self, x):
 
 
 class Adapter_init(nn.Module):
-    def __init__(self, hidden_size, dim, curvature_ratio=1.0):
+    def __init__(self, hidden_size, dim, dim_rot, curvature_ratio=1.0):
         super().__init__()
 
-        self.adapter_attn_q = BlockDiagonalLinear(block_size=dim, in_features=hidden_size, out_features=hidden_size, curvature=curvature_ratio)
-        self.adapter_attn_k = BlockDiagonalLinear(block_size=dim, in_features=hidden_size, out_features=hidden_size, curvature=curvature_ratio)
-        self.adapter_attn_v = BlockDiagonalLinear(block_size=dim, in_features=hidden_size, out_features=hidden_size, curvature=curvature_ratio)
+        self.adapter_attn_q = BlockDiagonalLinear(block_size=dim, rot_block_size=dim_rot,
+                                                  in_features=hidden_size, out_features=hidden_size, curvature=curvature_ratio)
+        self.adapter_attn_k = BlockDiagonalLinear(block_size=dim, rot_block_size=dim_rot,
+                                                  in_features=hidden_size, out_features=hidden_size, curvature=curvature_ratio)
+        self.adapter_attn_v = BlockDiagonalLinear(block_size=dim, rot_block_size=dim_rot,
+                                                  in_features=hidden_size, out_features=hidden_size, curvature=curvature_ratio)
 
         self.dim = dim
 
@@ -427,12 +432,15 @@ class Adapter_init(nn.Module):
 
 
 class Adapter_init_text(nn.Module):
-    def __init__(self, hidden_size, dim, curvature_ratio=1.0):
+    def __init__(self, hidden_size, dim, dim_rot, curvature_ratio=1.0):
         super().__init__()
 
-        self.adapter_attn_q = BlockDiagonalLinear_text(block_size=dim, in_features=hidden_size, out_features=hidden_size, curvature=curvature_ratio)
-        self.adapter_attn_k = BlockDiagonalLinear_text(block_size=dim, in_features=hidden_size, out_features=hidden_size, curvature=curvature_ratio)
-        self.adapter_attn_v = BlockDiagonalLinear_text(block_size=dim, in_features=hidden_size, out_features=hidden_size, curvature=curvature_ratio)
+        self.adapter_attn_q = BlockDiagonalLinear_text(block_size=dim, rot_block_size=dim_rot,
+                                                       in_features=hidden_size, out_features=hidden_size, curvature=curvature_ratio)
+        self.adapter_attn_k = BlockDiagonalLinear_text(block_size=dim, rot_block_size=dim_rot,
+                                                       in_features=hidden_size, out_features=hidden_size, curvature=curvature_ratio)
+        self.adapter_attn_v = BlockDiagonalLinear_text(block_size=dim, rot_block_size=dim_rot,
+                                                       in_features=hidden_size, out_features=hidden_size, curvature=curvature_ratio)
 
         self.dim = dim
 
