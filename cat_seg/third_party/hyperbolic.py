@@ -44,7 +44,7 @@ class BlockDiagonalLinear_text(nn.Module):
         self.rot_block_size = rot_block_size
         self.r_rot = out_features // self.rot_block_size
         self.rotation_weights = nn.Parameter(
-            torch.zeros(self.r_rot, block_size, block_size)
+            torch.zeros(self.r_rot, rot_block_size, rot_block_size)
         )
 
 
@@ -211,7 +211,7 @@ class BlockDiagonalLinear(nn.Module):
         self.rot_block_size = rot_block_size
         self.r_rot = out_features // self.rot_block_size
         self.rotation_weights = nn.Parameter(
-            torch.zeros(self.r_rot, block_size, block_size)
+            torch.zeros(self.r_rot, rot_block_size, rot_block_size)
         )
 
     def block_diagonal(self, R):
@@ -464,13 +464,13 @@ class Adapter_init_text(nn.Module):
 
 
 
-def set_adapter_hyperbolic(model, dim=32, hidden_size=512, length=12, s=0.1, count=0):
+def set_adapter_hyperbolic(model, dim=32, dim_rot=32, hidden_size=512, length=12, s=0.1, count=0):
     #print(dim)
     for _ in model.children():
         if type(_) == model_hyperbolic.ResidualAttentionBlock:
             print('length', length, 'count', count, 's', s)
             #print(_)
-            _.hyperbolic_attn = Adapter_init_text(hidden_size, dim)
+            _.hyperbolic_attn = Adapter_init_text(hidden_size, dim, dim_rot)
             _.dp = nn.Dropout(_.attn.dropout)
             _.s = s
             count+=1
@@ -481,13 +481,13 @@ def set_adapter_hyperbolic(model, dim=32, hidden_size=512, length=12, s=0.1, cou
             set_adapter_hyperbolic(_, dim, hidden_size, length, s)
     print('count',count)
 
-def set_adapter_vision_hyperbolic(model, dim=32, hidden_size=768, length=12, s=0.1, count=0, curvature_ratio=0.01):
+def set_adapter_vision_hyperbolic(model, dim=32, dim_rot=32, hidden_size=768, length=12, s=0.1, count=0, curvature_ratio=0.01):
     for _ in model.children():
         if type(_) == model_hyperbolic.ResidualAttentionBlock:
             print('length', length, 'count', count, 's', s)
             #print(_)
             if count < 11:
-                _.hyperbolic_attn = Adapter_init(hidden_size, dim, curvature_ratio)
+                _.hyperbolic_attn = Adapter_init(hidden_size, dim, dim_rot, curvature_ratio)
                 _.dp = nn.Dropout(_.attn.dropout)
                 _.s = s
                 count+=1
