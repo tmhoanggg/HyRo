@@ -154,6 +154,13 @@ class CATSegPredictor(nn.Module):
         text = [text[c] for c in gt_cls] if gt_cls is not None else text
         text = self.get_text_embeds(text, self.prompt_templates, self.clip_model, prompt)
         
+        # ADD: Get angle
+        # from utils.hyperbolic_utils import AngleCalculator
+        # angle_cal = AngleCalculator(curvature=0.1)
+        # angle = angle_cal(text, vis)
+        print("text_shape", text.shape)
+        print("visual_shape", x.shape)
+        
         text = text.repeat(x.shape[0], 1, 1, 1)
         out = self.transformer(x, text, vis)
         return out
