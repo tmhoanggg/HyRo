@@ -646,11 +646,40 @@ class Aggregator(nn.Module):
         text_feats = repeat(text_feats, "B T C -> B C T H W", H=img_feats.shape[-2], W=img_feats.shape[-1])
         return torch.cat((img_feats, text_feats), dim=1) # B 2C T H W
 
-    def correlation(self, img_feats, text_feats):
-        img_feats = F.normalize(img_feats, dim=1) # B C H W
-        text_feats = F.normalize(text_feats, dim=-1) # B T P C
-        corr = torch.einsum('bchw, btpc -> bpthw', img_feats, text_feats)
-        return corr
+    def correlation(self, img_feats, text_feats, cost_type='poincare_exp_dist', curvature=0.01, ld=0.1):
+        from utils.hyperbolic_utils import expmap0, poincare_distance
+
+        img_feats_norm = F.normalize(img_feats, dim=1) # B C H W
+        text_feats_norm = F.normalize(text_feats, dim=-1) # B T P C
+        corr = torch.einsum('bchw, btpc -> bpthw', img_feats_norm, text_feats_norm)
+
+        if cost_type == 'baseline':
+            return corr
+        elif cost_type == 'poincare_exp_dist':
+            B, C, H, W = img_feats.shape
+            T, P = text_feats.shape[1], text_feats.shape[2]
+
+            img_flat = img_feats.permute(0, 2, 3, 1).reshape(B * H * W, C)
+            img_hyp = expmap0(img_flat, curvature)
+            img_hyp = img_hyp.reshape(B, H, W, C)
+
+            text_flat = text_feats.reshape(B * T * P, C)
+            text_hyp = expmap0(text_flat, curvature)
+            text_hyp = text_hyp.reshape(B, T, P, C)
+
+            img_expanded = img_hyp.unsqueeze(1).unsqueeze(2)
+            text_expanded = text_hyp.unsqueeze(3).unsqueeze(4)
+            dist = poincare_distance(img_expanded, text_expanded, curvature)
+
+            corr_hyperbolic = torch.exp(-dist) - 1.0 # Range: [-1, 0]
+            corr_hyperbolic = corr_hyperbolic.permute(0, 2, 1, 3, 4)
+            print("corr", corr)
+            print("corr_hyperbolic:", corr_hyperbolic)
+
+            corr += ld * corr_hyperbolic
+            return corr
+        else:
+            raise NotImplementedError
 
     def corr_embed(self, x):
         B = x.shape[0]
