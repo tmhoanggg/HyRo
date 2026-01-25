@@ -177,10 +177,52 @@ class BlockDiagonalLinear_text(nn.Module):
 
     def tanh(self, x, clamp=15):
         return x.clamp(-clamp, clamp).tanh()
+    
+    def save_hyperbolic_embeddings(self, emb_before, emb_after):
+        """
+        Saves the intermediate embeddings to a .pt file, appending to existing data.
+        """
+        import os
+        import torch.distributed as dist
+        
+        # 1. Get rank to ensure safe writing in distributed settings
+        rank = dist.get_rank() if dist.is_initialized() else 0
+        
+        os.makedirs("insight", exist_ok=True)
+        save_path = f'insight/text_embeddings_rank{rank}.pt'
+
+        # 2. Detach and move to CPU (Critical for saving)
+        # We assume the user wants the full batch appended as a tensor in a list
+        val_before = emb_before.detach().cpu()
+        val_after = emb_after.detach().cpu()
+
+        # 3. Load existing data or start fresh
+        if os.path.exists(save_path):
+            try:
+                # weights_only=False is used in your example
+                data = torch.load(save_path, weights_only=False)
+            except (EOFError, RuntimeError, Exception):
+                # If file is corrupted, start over
+                data = {}
+        else:
+            data = {}
+
+        # 4. Initialize lists if keys don't exist
+        if 'before_rotation' not in data:
+            data['before_rotation'] = []
+        if 'after_rotation' not in data:
+            data['after_rotation'] = []
+
+        # 5. Append new batch
+        data['before_rotation'].append(val_before)
+        data['after_rotation'].append(val_after)
+
+        # 6. Save back to disk
+        torch.save(data, save_path)
+
 
     def forward(self, x, visual=False):
-        # 确保输入形状为 (batch_size, 512, 512)
-        # 计算双曲空间映射 exp_map0
+        # Ensure input shape is (batch_size, 512, 512)
         output_hyperbolic = self.expmap0(x)
         fix_filt = output_hyperbolic.data
         orig_dtype = fix_filt.dtype
@@ -188,6 +230,9 @@ class BlockDiagonalLinear_text(nn.Module):
         output_hyperbolic_filt = self.mobius_matvec(block_diagonal_weight.to(orig_dtype), fix_filt)
         rotation_weights = self.get_orthogonal_matrix().to(orig_dtype) # Add: Rotation
         output_hyperbolic_rotated = output_hyperbolic_filt @ rotation_weights.transpose(-1, -2) # Add: rotate
+        
+        self.save_hyperbolic_embeddings(output_hyperbolic_filt, output_hyperbolic_rotated)
+
         output_euclidean = self.logmap0(output_hyperbolic_rotated)
         return output_euclidean
 
@@ -340,6 +385,51 @@ class BlockDiagonalLinear(nn.Module):
     def tanh(self, x, clamp=15):
         return x.clamp(-clamp, clamp).tanh()
     
+    def save_hyperbolic_embeddings(self, emb_before, emb_after):
+        """
+        Saves the intermediate embeddings to a .pt file, appending to existing data.
+        """
+        import os
+        import torch.distributed as dist
+        
+        # 1. Get rank to ensure safe writing in distributed settings
+        rank = dist.get_rank() if dist.is_initialized() else 0
+
+        # Only save from last layer (count == 12)
+        if not hasattr(self, 'count') or self.count != 12:
+            return
+
+        os.makedirs("insight", exist_ok=True)
+        save_path = f'insight/visual_embeddings_rank{rank}.pt'
+
+        # 2. Detach and move to CPU (Critical for saving)
+        # We assume the user wants the full batch appended as a tensor in a list
+        val_before = emb_before.detach().cpu()
+        val_after = emb_after.detach().cpu()
+
+        # 3. Load existing data or start fresh
+        if os.path.exists(save_path):
+            try:
+                data = torch.load(save_path, weights_only=False)
+            except (EOFError, RuntimeError, Exception):
+                # If file is corrupted, start over
+                data = {}
+        else:
+            data = {}
+
+        # 4. Initialize lists if keys don't exist
+        if 'before_rotation' not in data:
+            data['before_rotation'] = []
+        if 'after_rotation' not in data:
+            data['after_rotation'] = []
+
+        # 5. Append new batch
+        data['before_rotation'].append(val_before)
+        data['after_rotation'].append(val_after)
+
+        # 6. Save back to disk
+        torch.save(data, save_path)
+
 
     def forward(self, x, visual=False):
         output_hyperbolic = self.expmap0(x)
@@ -348,7 +438,10 @@ class BlockDiagonalLinear(nn.Module):
         block_diagonal_weight = self.block_diagonal(self.weights)
         output_hyperbolic_filt_stretch = self.mobius_matvec(block_diagonal_weight.to(orig_dtype), fix_filt)
         rotation_weights = self.get_orthogonal_matrix().to(orig_dtype) # Add: Rotation weights
-        output_hyperbolic_rotated = output_hyperbolic_filt_stretch @ rotation_weights.transpose(-1, -2) # Add: rotate 
+        output_hyperbolic_rotated = output_hyperbolic_filt_stretch @ rotation_weights.transpose(-1, -2) # Add: rotate
+        
+        self.save_hyperbolic_embeddings(output_hyperbolic_filt_stretch, output_hyperbolic_rotated)
+        
         output_euclidean = self.logmap0(output_hyperbolic_rotated)
         return output_euclidean
 
@@ -464,13 +557,13 @@ class Adapter_init_text(nn.Module):
 
 
 
-def set_adapter_hyperbolic(model, dim=32, dim_rot=32, hidden_size=512, length=12, s=0.1, count=0):
+def set_adapter_hyperbolic(model, dim=32, dim_rot=32, hidden_size=512, length=12, s=0.1, count=0, curvature_ratio=0.01):
     #print(dim)
     for _ in model.children():
         if type(_) == model_hyperbolic.ResidualAttentionBlock:
             print('length', length, 'count', count, 's', s)
             #print(_)
-            _.hyperbolic_attn = Adapter_init_text(hidden_size, dim, dim_rot)
+            _.hyperbolic_attn = Adapter_init_text(hidden_size, dim, dim_rot, curvature_ratio)
             _.dp = nn.Dropout(_.attn.dropout)
             _.s = s
             count+=1
