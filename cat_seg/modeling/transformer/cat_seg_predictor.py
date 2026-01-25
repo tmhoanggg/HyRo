@@ -154,12 +154,37 @@ class CATSegPredictor(nn.Module):
         text = [text[c] for c in gt_cls] if gt_cls is not None else text
         text = self.get_text_embeds(text, self.prompt_templates, self.clip_model, prompt)
         
-        # ADD: Get angle
-        # from utils.hyperbolic_utils import AngleCalculator
-        # angle_cal = AngleCalculator(curvature=0.1)
-        # angle = angle_cal(text, vis)
-        print("text_shape", text.shape)
-        print("visual_shape", x.shape)
+        ##############################################
+        # ADD: Get angle (only during inference)
+        if not self.training:
+            import os
+            import torch.distributed as dist
+            from utils.hyperbolic_utils import AngleCalculator
+            
+            with torch.no_grad():
+                angle_cal = AngleCalculator(curvature=0.1)
+                angles = angle_cal(text, x)  # This returns a scalar or [171] tensor
+                
+                # Save with process-specific filename to avoid conflicts
+                rank = dist.get_rank() if dist.is_initialized() else 0
+                os.makedirs("insight", exist_ok=True)
+                save_path = f'insight/angle_statistics_rank{rank}.pt'
+                
+                if os.path.exists(save_path):
+                    try:
+                        data = torch.load(save_path, weights_only=False)
+                        # Append to list instead of concatenating
+                        if 'angles' not in data:
+                            data['angles'] = []
+                        data['angles'].append(angles.cpu())
+                    except (EOFError, RuntimeError):
+                        # File corrupted, start fresh
+                        data = {'angles': [angles.cpu()]}
+                else:
+                    data = {'angles': [angles.cpu()]}
+                
+                torch.save(data, save_path)
+        ##############################################
         
         text = text.repeat(x.shape[0], 1, 1, 1)
         out = self.transformer(x, text, vis)
