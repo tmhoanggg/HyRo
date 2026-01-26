@@ -670,11 +670,10 @@ class Aggregator(nn.Module):
             img_expanded = img_hyp.unsqueeze(1).unsqueeze(2)
             text_expanded = text_hyp.unsqueeze(3).unsqueeze(4)
             dist = poincare_distance(img_expanded, text_expanded, curvature)
-            print("dist", dist)
 
             corr_hyperbolic = torch.exp(-beta * dist) - 1.0 # Range: [-1, 0]
             corr_hyperbolic = corr_hyperbolic.permute(0, 2, 1, 3, 4)
-            print("corr_hyperbolic:", corr_hyperbolic)
+            print(f"dist = {dist.mean().item()} \t corr_hyperbolic: {corr_hyperbolic.mean().item()}")
 
             corr += ld * corr_hyperbolic
             return corr
