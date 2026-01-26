@@ -395,8 +395,8 @@ class BlockDiagonalLinear(nn.Module):
         # 1. Get rank to ensure safe writing in distributed settings
         rank = dist.get_rank() if dist.is_initialized() else 0
 
-        # Only save from last layer (count == 12)
-        if not hasattr(self, 'count') or self.count != 12:
+        # Only save from last layer (count == 11)
+        if not hasattr(self, 'count') or self.count != 11:
             return
 
         os.makedirs("insight", exist_ok=True)
