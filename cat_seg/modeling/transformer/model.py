@@ -646,7 +646,7 @@ class Aggregator(nn.Module):
         text_feats = repeat(text_feats, "B T C -> B C T H W", H=img_feats.shape[-2], W=img_feats.shape[-1])
         return torch.cat((img_feats, text_feats), dim=1) # B 2C T H W
 
-    def correlation(self, img_feats, text_feats, cost_type='poincare_exp_dist', curvature=0.01, ld=0.1):
+    def correlation(self, img_feats, text_feats, cost_type='poincare_exp_dist', curvature=0.01, ld=0.1, beta=0.5):
         from utils.hyperbolic_utils import expmap0, poincare_distance
 
         img_feats_norm = F.normalize(img_feats, dim=1) # B C H W
@@ -670,10 +670,10 @@ class Aggregator(nn.Module):
             img_expanded = img_hyp.unsqueeze(1).unsqueeze(2)
             text_expanded = text_hyp.unsqueeze(3).unsqueeze(4)
             dist = poincare_distance(img_expanded, text_expanded, curvature)
+            print("dist", dist)
 
-            corr_hyperbolic = torch.exp(-dist) - 1.0 # Range: [-1, 0]
+            corr_hyperbolic = torch.exp(-beta * dist) - 1.0 # Range: [-1, 0]
             corr_hyperbolic = corr_hyperbolic.permute(0, 2, 1, 3, 4)
-            print("corr", corr)
             print("corr_hyperbolic:", corr_hyperbolic)
 
             corr += ld * corr_hyperbolic
