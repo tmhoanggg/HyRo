@@ -440,7 +440,7 @@ class BlockDiagonalLinear(nn.Module):
         rotation_weights = self.get_orthogonal_matrix().to(orig_dtype) # Add: Rotation weights
         output_hyperbolic_rotated = output_hyperbolic_filt_stretch @ rotation_weights.transpose(-1, -2) # Add: rotate
         
-        self.save_hyperbolic_embeddings(output_hyperbolic_filt_stretch, output_hyperbolic_rotated)
+        #self.save_hyperbolic_embeddings(output_hyperbolic_filt_stretch, output_hyperbolic_rotated)
         
         output_euclidean = self.logmap0(output_hyperbolic_rotated)
         return output_euclidean
