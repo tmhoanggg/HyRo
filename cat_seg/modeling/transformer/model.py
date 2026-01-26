@@ -659,11 +659,11 @@ class Aggregator(nn.Module):
             B, C, H, W = img_feats.shape
             T, P = text_feats.shape[1], text_feats.shape[2]
 
-            img_flat = img_feats.permute(0, 2, 3, 1).reshape(B * H * W, C)
+            img_flat = img_feats_norm.permute(0, 2, 3, 1).reshape(B * H * W, C)
             img_hyp = expmap0(img_flat, curvature)
             img_hyp = img_hyp.reshape(B, H, W, C)
 
-            text_flat = text_feats.reshape(B * T * P, C)
+            text_flat = text_feats_norm.reshape(B * T * P, C)
             text_hyp = expmap0(text_flat, curvature)
             text_hyp = text_hyp.reshape(B, T, P, C)
 
