@@ -187,6 +187,8 @@ class BlockDiagonalLinear_text(nn.Module):
         
         # 1. Get rank to ensure safe writing in distributed settings
         rank = dist.get_rank() if dist.is_initialized() else 0
+        if rank != 0:
+            return
         
         os.makedirs("insight", exist_ok=True)
         save_path = f'insight/text_embeddings_rank{rank}.pt'
@@ -231,7 +233,7 @@ class BlockDiagonalLinear_text(nn.Module):
         rotation_weights = self.get_orthogonal_matrix().to(orig_dtype) # Add: Rotation
         output_hyperbolic_rotated = output_hyperbolic_filt @ rotation_weights.transpose(-1, -2) # Add: rotate
         
-        self.save_hyperbolic_embeddings(output_hyperbolic_filt, output_hyperbolic_rotated)
+        #self.save_hyperbolic_embeddings(output_hyperbolic_filt, output_hyperbolic_rotated)
 
         output_euclidean = self.logmap0(output_hyperbolic_rotated)
         return output_euclidean
@@ -561,7 +563,7 @@ def set_adapter_hyperbolic(model, dim=32, dim_rot=32, hidden_size=512, length=12
     #print(dim)
     for _ in model.children():
         if type(_) == model_hyperbolic.ResidualAttentionBlock:
-            print('length', length, 'count', count, 's', s)
+            #print('length', length, 'count', count, 's', s)
             #print(_)
             _.hyperbolic_attn = Adapter_init_text(hidden_size, dim, dim_rot, curvature_ratio)
             _.dp = nn.Dropout(_.attn.dropout)
@@ -571,13 +573,13 @@ def set_adapter_hyperbolic(model, dim=32, dim_rot=32, hidden_size=512, length=12
             bound_method = forward_attn_init.__get__(_, _.__class__)
             setattr(_, 'forward', bound_method)
         elif len(list(_.children())) != 0:
-            set_adapter_hyperbolic(_, dim, dim_rot, hidden_size, length, s)
-    print('count',count)
+            set_adapter_hyperbolic(_, dim, dim_rot, hidden_size, length, s, count, curvature_ratio)
+    #print('count',count)
 
 def set_adapter_vision_hyperbolic(model, dim=32, dim_rot=32, hidden_size=768, length=12, s=0.1, count=0, curvature_ratio=0.01):
     for _ in model.children():
         if type(_) == model_hyperbolic.ResidualAttentionBlock:
-            print('length', length, 'count', count, 's', s)
+            #print('length', length, 'count', count, 's', s)
             #print(_)
             if count < 11:
                 _.hyperbolic_attn = Adapter_init(hidden_size, dim, dim_rot, curvature_ratio)
@@ -596,5 +598,5 @@ def set_adapter_vision_hyperbolic(model, dim=32, dim_rot=32, hidden_size=768, le
                 bound_method = oft_forward_vision_init.__get__(_, _.__class__)
                 setattr(_, 'forward_dense', bound_method)
         elif len(list(_.children())) != 0:
-            set_adapter_vision_hyperbolic(_, dim, dim_rot, hidden_size, length, s)
-    print('count',count)
+            set_adapter_vision_hyperbolic(_, dim, dim_rot, hidden_size, length, s, count, curvature_ratio)
+    #print('count',count)
