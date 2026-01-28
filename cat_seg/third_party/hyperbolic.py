@@ -92,6 +92,7 @@ class BlockDiagonalLinear_text(nn.Module):
         sinh_input = torch.clamp(rc_xnorm, min=eps, max=math.asinh(2 ** 15))
         _output = torch.sinh(sinh_input) * x / rc_xnorm
         return _output
+    
     def expmap0(self, u):
         """
         Exponential map: map points from the tangent space at the vertex
