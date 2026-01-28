@@ -29,7 +29,7 @@ MODEL:
   PROMPT_ENSEMBLE_TYPE: "imagenet"
 DATASETS:
   TRAIN: ("coco_2017_train_stuff_all_sem_seg",)
-  TEST: ("coco_2017_test_stuff_all_sem_seg",)
+  TEST: ("ade20k_full_sem_seg_freq_val_all",) #("coco_2017_test_stuff_all_sem_seg",)
 SOLVER:
   IMS_PER_BATCH: 4
   BASE_LR: 0.0002
