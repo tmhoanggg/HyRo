@@ -34,6 +34,11 @@ Please refer to the [CAT-Seg](https://github.com/cvlab-kaist/CAT-Seg) repository
 - Environment setup (Python version, dependencies, etc.)
 - Dataset preparation (e.g., COCO, ADE20K, Pascal VOC)
 
+### Demo
+```bash
+python demo/demo.py --config-file configs/vitb_384_hyperbolic.yaml --input /path/to/input --output /path/to/output --opts MODEL.WEIGHTS /path/to/weights
+```
+
 ### Training and Evaluation
 
 You can launch the entire training and evaluation pipeline using:
