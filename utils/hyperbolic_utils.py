@@ -53,6 +53,35 @@ def expmap0_lorentz(x: Tensor, curvature: float = 0.01, eps: float = 1e-8) -> Te
     _output = torch.sinh(sinh_input) * x / rc_xnorm
     return _output
 
+# def expmap0_lorentz(x: Tensor, curvature: float = 0.01, eps: float = 1e-6, max_norm: float = 1.0) -> Tensor:
+#     """
+#     Exponential map at origin for Lorentz model.
+    
+#     Maps tangent vector x at origin to hyperboloid.
+#     Formula: expmap_0(x) = (sinh(sqrt(c)*||x||) / (sqrt(c)*||x||)) * x
+    
+#     For numerical stability when ||x|| is small:
+#     sinh(t)/t ≈ 1 + t²/6 + ... ≈ 1 for small t
+#     """
+#     sqrt_c = math.sqrt(curvature)
+
+#     # 1. Euclidean norm
+#     x_norm = torch.norm(x, dim=-1, keepdim=True)
+
+#     # 2. Bound tangent norm (CRITICAL for stability)
+#     x_norm_clipped = torch.clamp(x_norm, max=max_norm)
+
+#     # 3. Scaled norm
+#     r = sqrt_c * x_norm_clipped
+#     r = torch.clamp(r, max=20.0)  # avoid sinh overflow
+
+#     # 4. Safe sinh(r)/r
+#     scale = torch.sinh(r) / (r + eps)
+
+#     # 5. Radial scaling
+#     return scale * x
+
+
 def logmap0_lorentz(x: Tensor, curvature: float = 0.01, eps: float = 1e-8) -> Tensor:
     """
     Logarithmic map: map points from the hyperboloid to the tangent space
@@ -110,6 +139,55 @@ def lorentz_distance(x: Tensor, y: Tensor, curvature: float = 0.01, eps: float =
     dist = (1 / sqrt_c) * torch.acosh(acosh_input)
     
     return dist
+
+def pairwise_inner(x: Tensor, y: Tensor, curv: float | Tensor = 1.0):
+    """
+    Compute pairwise Lorentzian inner product between input vectors.
+
+    Args:
+        x: Tensor of shape `(B1, D)` giving a space components of a batch
+            of vectors on the hyperboloid.
+        y: Tensor of shape `(B2, D)` giving a space components of another
+            batch of points on the hyperboloid.
+        curv: Positive scalar denoting negative hyperboloid curvature.
+        eps: Small float number to avoid numerical instability.
+
+    Returns:
+        Tensor of shape `(B1, B2)` giving pairwise Lorentzian inner product
+        between input vectors.
+    """
+
+    x_time = torch.sqrt(1 / curv + torch.sum(x**2, dim=-1, keepdim=True))
+    y_time = torch.sqrt(1 / curv + torch.sum(y**2, dim=-1, keepdim=True))
+    xyl = x @ y.T - x_time @ y_time.T
+    return xyl
+
+
+def pairwise_dist(
+    x: Tensor, y: Tensor, curv: float | Tensor = 1.0, eps: float = 1e-8
+) -> Tensor:
+    """
+    Compute the pairwise geodesic distance between two batches of points on
+    the hyperboloid.
+
+    Args:
+        x: Tensor of shape `(B1, D)` giving a space components of a batch
+            of point on the hyperboloid.
+        y: Tensor of shape `(B2, D)` giving a space components of another
+            batch of points on the hyperboloid.
+        curv: Positive scalar denoting negative hyperboloid curvature.
+        eps: Small float number to avoid numerical instability.
+
+    Returns:
+        Tensor of shape `(B1, B2)` giving pairwise distance along the geodesics
+        connecting the input points.
+    """
+
+    # Ensure numerical stability in arc-cosh by clamping input.
+    c_xyl = -curv * pairwise_inner(x, y, curv)
+    _distance = torch.acosh(torch.clamp(c_xyl, min=1 + eps))
+    return _distance / curv**0.5
+
 
 def poincare_distance(x, y, curvature):
     sq_dist = torch.sum((x - y).pow(2), dim=-1, keepdim=True)
