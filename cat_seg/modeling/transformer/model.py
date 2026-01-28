@@ -646,39 +646,76 @@ class Aggregator(nn.Module):
         text_feats = repeat(text_feats, "B T C -> B C T H W", H=img_feats.shape[-2], W=img_feats.shape[-1])
         return torch.cat((img_feats, text_feats), dim=1) # B 2C T H W
 
-    def correlation(self, img_feats, text_feats, cost_type='poincare_exp_dist', curvature=0.01, ld=0.1, beta=0.5):
-        from utils.hyperbolic_utils import expmap0, poincare_distance
+    def correlation(self, img_feats, text_feats, cost_type='baseline', curvature=1.0, ld=0.1, beta=0.8):
+        from utils.hyperbolic_utils import expmap0_poincare, poincare_distance, expmap0_lorentz, pairwise_dist
 
         img_feats_norm = F.normalize(img_feats, dim=1) # B C H W
         text_feats_norm = F.normalize(text_feats, dim=-1) # B T P C
         corr = torch.einsum('bchw, btpc -> bpthw', img_feats_norm, text_feats_norm)
-
+        
         if cost_type == 'baseline':
             return corr
-        elif cost_type == 'poincare_exp_dist':
+        else:
             B, C, H, W = img_feats.shape
             T, P = text_feats.shape[1], text_feats.shape[2]
 
-            img_flat = img_feats_norm.permute(0, 2, 3, 1).reshape(B * H * W, C)
-            img_hyp = expmap0(img_flat, curvature)
-            img_hyp = img_hyp.reshape(B, H, W, C)
+            img_flat = img_feats.permute(0, 2, 3, 1).reshape(B * H * W, C)
+            text_flat = text_feats.reshape(B * T * P, C)
 
-            text_flat = text_feats_norm.reshape(B * T * P, C)
-            text_hyp = expmap0(text_flat, curvature)
-            text_hyp = text_hyp.reshape(B, T, P, C)
+            if cost_type == 'poincare_exp_dist':
+                img_hyp = expmap0_poincare(img_flat, curvature)
+                text_hyp = expmap0_poincare(text_flat, curvature)
 
-            img_expanded = img_hyp.unsqueeze(1).unsqueeze(2)
-            text_expanded = text_hyp.unsqueeze(3).unsqueeze(4)
-            dist = poincare_distance(img_expanded, text_expanded, curvature)
+                img_hyp = img_hyp.reshape(B, H, W, C)
+                text_hyp = text_hyp.reshape(B, T, P, C)
 
-            corr_hyperbolic = torch.exp(-beta * dist) - 1.0 # Range: [-1, 0]
-            corr_hyperbolic = corr_hyperbolic.permute(0, 2, 1, 3, 4)
-            print(f"dist = {dist.mean().item()} \t corr_hyperbolic: {corr_hyperbolic.mean().item()}")
+                img_expanded = img_hyp.unsqueeze(1).unsqueeze(2)
+                text_expanded = text_hyp.unsqueeze(3).unsqueeze(4)
+                dist = poincare_distance(img_expanded, text_expanded, curvature)
+                dist = dist.squeeze(-1)
+                print(f"dist mean: {dist.mean().item()} \t dist var: {dist.var().item()}")
 
-            corr += ld * corr_hyperbolic
-            return corr
-        else:
-            raise NotImplementedError
+                corr_hyperbolic = torch.exp(-beta * dist) - 1.0 # Range: [-1, 0]
+                corr_hyperbolic = corr_hyperbolic.permute(0, 2, 1, 3, 4)
+                print(f"corr_hyperbolic mean: {corr_hyperbolic.mean().item()} \t corr_hyperbolic var: {corr_hyperbolic.var().item()}")
+
+                corr += ld * corr_hyperbolic
+                return corr
+            elif cost_type == "lorentz_exp_dist":
+                img_hyp = expmap0_lorentz(img_flat, curvature)
+                text_hyp = expmap0_lorentz(text_flat, curvature)
+                
+                dist = pairwise_dist(img_hyp, text_hyp, curvature) # [B*H*W, B*T*P]
+                print(f"Lorentz dist mean: {dist.mean().item()} \t dist var: {dist.var().item()}")
+
+                dist = dist.reshape(B, H, W, B, T, P)
+                dist = torch.einsum('bhwbtp->bpthw', dist)
+
+                #dist = (dist - dist.mean()) / (dist.std() + 1e-6)
+                print(f"dist mean: {dist.mean().item()} \t dist var: {dist.var().item()}")
+                corr_hyperbolic = torch.exp(-beta * dist) - 1.0
+                print(f"corr_hyperbolic mean: {corr_hyperbolic.mean().item()} \t corr_hyperbolic var: {corr_hyperbolic.var().item()}")
+                
+                corr += ld * corr_hyperbolic
+                return corr
+            elif cost_type == "lorentz_exp_dist_diff":
+                img_hyp = expmap0_lorentz(img_flat, curvature)
+                text_hyp = expmap0_lorentz(text_flat, curvature)
+                
+                dist = pairwise_dist(img_hyp, text_hyp, curvature) # [B*H*W, B*T*P]
+                dist = dist.reshape(B, H, W, B, T, P)
+                dist = torch.einsum('bhwbtp->bpthw', dist)
+
+                min_dist = dist.min()
+                dist = dist - min_dist
+                print(f"dist_norm mean: {dist.mean().item()} \t dist_norm var: {dist.var().item()}")
+                corr_hyperbolic = torch.exp(-beta * dist) - 1.0
+                print(f"corr_hyperbolic mean: {corr_hyperbolic.mean().item()} \t corr_hyperbolic var: {corr_hyperbolic.var().item()}")
+                
+                corr += ld * corr_hyperbolic
+                return corr
+            else:
+                raise NotImplementedError
 
     def corr_embed(self, x):
         B = x.shape[0]
