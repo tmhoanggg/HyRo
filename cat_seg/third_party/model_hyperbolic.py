@@ -345,8 +345,8 @@ class CLIP(nn.Module):
             heads=transformer_heads,
             attn_mask=self.build_attention_mask()
         )
-        set_adapter_hyperbolic(self.transformer, dim=128, dim_rot=256, hidden_size=transformer_width, length=12, curvature_ratio=0.1)
-        set_adapter_vision_hyperbolic(self.visual, dim=128, dim_rot=256, hidden_size=vision_width, length=12, curvature_ratio=0.1)
+        set_adapter_hyperbolic(self.transformer, dim=128, dim_rot=256, hidden_size=transformer_width, length=12)
+        set_adapter_vision_hyperbolic(self.visual, dim=128, dim_rot=256, hidden_size=vision_width, length=12)
         self.vocab_size = vocab_size
         self.token_embedding = nn.Embedding(vocab_size, transformer_width)
         self.positional_embedding = nn.Parameter(torch.empty(self.context_length, transformer_width))

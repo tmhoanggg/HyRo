@@ -560,13 +560,13 @@ class Adapter_init_text(nn.Module):
 
 
 
-def set_adapter_hyperbolic(model, dim=32, dim_rot=32, hidden_size=512, length=12, s=0.1, count=0, curvature_ratio=0.01):
+def set_adapter_hyperbolic(model, dim=32, dim_rot=32, hidden_size=512, length=12, s=0.1, count=0):
     #print(dim)
     for _ in model.children():
         if type(_) == model_hyperbolic.ResidualAttentionBlock:
             #print('length', length, 'count', count, 's', s)
             #print(_)
-            _.hyperbolic_attn = Adapter_init_text(hidden_size, dim, dim_rot, curvature_ratio)
+            _.hyperbolic_attn = Adapter_init_text(hidden_size, dim, dim_rot)
             _.dp = nn.Dropout(_.attn.dropout)
             _.s = s
             count+=1
@@ -574,7 +574,7 @@ def set_adapter_hyperbolic(model, dim=32, dim_rot=32, hidden_size=512, length=12
             bound_method = forward_attn_init.__get__(_, _.__class__)
             setattr(_, 'forward', bound_method)
         elif len(list(_.children())) != 0:
-            set_adapter_hyperbolic(_, dim, dim_rot, hidden_size, length, s, count, curvature_ratio)
+            set_adapter_hyperbolic(_, dim, dim_rot, hidden_size, length, s, count)
     #print('count',count)
 
 def set_adapter_vision_hyperbolic(model, dim=32, dim_rot=32, hidden_size=768, length=12, s=0.1, count=0, curvature_ratio=0.01):
