@@ -58,7 +58,7 @@ class VisualizationGt(object):
         else:
             if "sem_seg" in predictions:
                 vis_output = visualizer.draw_sem_seg(
-                    predictions["sem_seg"]
+                    predictions["sem_seg"], alpha=0.4
                 )
             if "instances" in predictions:
                 instances = predictions["instances"].to(self.cpu_device)
