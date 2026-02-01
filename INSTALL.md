@@ -12,10 +12,10 @@
 An example of installation is shown below:
 
 ```
-git clone https://github.com/KU-CVLAB/CAT-Seg.git
-cd CAT-Seg
-conda create -n catseg python=3.8
-conda activate catseg
-conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia
+git clone https://github.com/tmhoanggg/HyRo.git
+cd HyRo
+conda create -n hyro python=3.12
+conda activate hyro
+pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu124
 pip install -r requirements.txt
 ```
