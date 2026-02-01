@@ -131,7 +131,7 @@ if __name__ == "__main__":
                     assert os.path.isdir(args.output), args.output
                     out_filename = os.path.join(args.output, os.path.basename(path))
                 else:
-                    assert len(args.input) == 1, "Please specify a directory with args.output"
+                    assert len(args.input) == 1, "Directory not found: Please create the output directory or specify a single input file."
                     out_filename = args.output
                 visualized_output.save(out_filename)
             else:
