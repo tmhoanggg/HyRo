@@ -26,8 +26,9 @@ class CATSegDiffusionEditor:
         
         # 2. Load Diffusion Pipeline (Stable Diffusion 2.0 Inpainting is a robust choice)
         self.diffusion_pipe = StableDiffusionInpaintPipeline.from_pretrained(
-            "stabilityai/stable-diffusion-2-inpainting",
+            "stable-diffusion-v1-5/stable-diffusion-inpainting",
             torch_dtype=torch.float16,
+            revision="fp16"
         ).to(device)
 
     @torch.no_grad()
@@ -63,8 +64,8 @@ class CATSegDiffusionEditor:
             negative_prompt=negative_prompt,
             image=original_img,
             mask_image=mask_img,
-            num_inference_steps=50,
-            guidance_scale=7.5
+            # num_inference_steps=50,
+            # guidance_scale=7.5
         ).images[0]
         
         return edited_image, mask_img
