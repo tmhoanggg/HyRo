@@ -28,7 +28,7 @@ class CATSegDiffusionEditor:
         # 2. Load Diffusion Pipeline (Stable Diffusion 2.0 Inpainting is a robust choice)
         self.diffusion_pipe = StableDiffusionInpaintPipeline.from_pretrained(
             "stable-diffusion-v1-5/stable-diffusion-inpainting",
-            torch_dtype=torch.float16,
+            dtype=torch.float16,
             use_safetensors=True
         ).to(device)
 
