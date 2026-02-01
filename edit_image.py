@@ -1,3 +1,4 @@
+import os
 import argparse
 import torch
 import numpy as np
@@ -76,7 +77,7 @@ if __name__ == "__main__":
     parser.add_argument("--weights", required=True)
     parser.add_argument("--class_name", required=True, help="Text query for segmentation")
     parser.add_argument("--prompt", required=True, help="Edit prompt")
-    parser.add_argument("--output", default="edited.png")
+    parser.add_argument("--output", default="/kaggle/working/")
     args = parser.parse_args()
 
 
@@ -91,5 +92,5 @@ if __name__ == "__main__":
         edit_prompt=args.prompt
     )
     
-    result.save()
-    debug_mask.save(args.output)
+    result.save(os.path.join(args.output, "edited_image.png"))
+    debug_mask.save(os.path.join(args.output, "mask.png"))
