@@ -28,7 +28,6 @@ class CATSegDiffusionEditor:
         self.diffusion_pipe = StableDiffusionInpaintPipeline.from_pretrained(
             "stable-diffusion-v1-5/stable-diffusion-inpainting",
             torch_dtype=torch.float16,
-            revision="fp16"
         ).to(device)
 
     @torch.no_grad()
