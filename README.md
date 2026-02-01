@@ -6,7 +6,7 @@ This is our official implementation of HyRo!
 
 ## Overview
 <p align="center">
-  <img src="assets/architecture.jpg" alt="Architecture" width="700"/>
+  <img src="assets/architecture.png" alt="Architecture" width="700"/>
 </p>
 
 We introduce HyRo, a framework extending the hyperbolic radius adjustment from [HyperCLIP](https://github.com/SJTU-DeepVisionLab/HyperCLIP) by adding a hyperbolic rotation module, based on the hypothesis that semantic alignment may be mismatched after radius adjustment.
