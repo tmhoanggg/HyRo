@@ -1,7 +1,7 @@
 # Semantic Alignment in Hyperbolic Space for Open-Vocabulary Semantic Segmentation
 This is our official implementation of HyRo!
 
-[[Project](https://tmhoanggg.github.io/HyRo/)] [[Colab](https://colab.research.google.com/drive/1nb3YD5LHDO5d27KSnJFoI52dJ0-tt6rn?usp=sharing)]
+[[Project Page](https://tmhoanggg.github.io/HyRo/)] [[Colab](https://colab.research.google.com/drive/1nb3YD5LHDO5d27KSnJFoI52dJ0-tt6rn?usp=sharing)]
 
 
 ## Overview
