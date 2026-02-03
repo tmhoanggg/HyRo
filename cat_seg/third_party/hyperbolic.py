@@ -459,6 +459,11 @@ def forward_attn_init(self, x):
     attn = (q @ k.transpose(-2,-1)) * (float(self.attn.head_dim) ** -0.5)
     attn = attn + self.attn_mask.unsqueeze(0).unsqueeze(1).cuda().to(orig_dtype)
     attn = attn.softmax(dim=-1)
+
+    # ADD THIS: Store attention weights for visualization
+    if hasattr(self, 'save_attention') and self.save_attention:
+        self.attention_map = attn.detach()
+
     final_lora = ((attn @ v).transpose(1,2)).permute(1,0,2,3).reshape(B, N, C)
     final_lora = self.attn.out_proj(final_lora)
     final_lora = self.dp(final_lora)
@@ -470,7 +475,7 @@ def forward_attn_init(self, x):
 def oft_forward_vision_init(self, x):
     B, N, C = x.shape
     res_x = x
-    if self.count <= 11:
+    if self.count <= self.last_layer_index:
         in_proj_weight_new = self.hyperbolic_attn(self.attn.in_proj_weight, visual=True)
         qkv = nn.functional.linear(input=self.ln_1(x), weight=in_proj_weight_new, bias=self.attn.in_proj_bias).reshape(B, N, 3, self.n_head, C // self.n_head).permute(2, 1, 3, 0, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]  # make torchscript happy (cannot use tensor as tuple)
@@ -560,12 +565,12 @@ class Adapter_init_text(nn.Module):
 
 
 
-def set_adapter_hyperbolic(model, dim=32, dim_rot=32, hidden_size=512, length=12, s=0.1, count=0):
-    #print(dim)
+def set_adapter_hyperbolic(model, dim=32, dim_rot=32, hidden_size=512, s=0.1, count=0):
+    print(dim)
     for _ in model.children():
         if type(_) == model_hyperbolic.ResidualAttentionBlock:
-            #print('length', length, 'count', count, 's', s)
-            #print(_)
+            print('count', count, 's', s)
+            print(_)
             _.hyperbolic_attn = Adapter_init_text(hidden_size, dim, dim_rot)
             _.dp = nn.Dropout(_.attn.dropout)
             _.s = s
@@ -574,30 +579,29 @@ def set_adapter_hyperbolic(model, dim=32, dim_rot=32, hidden_size=512, length=12
             bound_method = forward_attn_init.__get__(_, _.__class__)
             setattr(_, 'forward', bound_method)
         elif len(list(_.children())) != 0:
-            set_adapter_hyperbolic(_, dim, dim_rot, hidden_size, length, s, count)
-    #print('count',count)
+            set_adapter_hyperbolic(_, dim, dim_rot, hidden_size, s, count)
+    print('count',count)
 
-def set_adapter_vision_hyperbolic(model, dim=32, dim_rot=32, hidden_size=768, length=12, s=0.1, count=0, curvature_ratio=0.01):
+def set_adapter_vision_hyperbolic(model, dim=32, dim_rot=32, hidden_size=768, s=0.1, count=0, curvature_ratio=0.01):
     for _ in model.children():
         if type(_) == model_hyperbolic.ResidualAttentionBlock:
-            #print('length', length, 'count', count, 's', s)
-            #print(_)
-            if count < 11:
-                _.hyperbolic_attn = Adapter_init(hidden_size, dim, dim_rot, curvature_ratio)
-                _.dp = nn.Dropout(_.attn.dropout)
-                _.s = s
-                count+=1
-                _.count = count
-                bound_method = oft_forward_vision_init.__get__(_, _.__class__)
+            real_hidden_size = _.attn.embed_dim
+            last_layer_index = 23 if real_hidden_size == 1024 else 11 # ViT-B/16 -> last index 11; ViT-L/14 -> last index 23
+            _.last_layer_index = last_layer_index
+
+            _.hyperbolic_attn = Adapter_init(hidden_size, dim, dim_rot, curvature_ratio)
+            _.dp = nn.Dropout(_.attn.dropout)
+            _.s = s
+            count+=1
+            _.count = count
+            bound_method = oft_forward_vision_init.__get__(_, _.__class__)
+
+            print('count', count, 's', s)
+            print(_)
+            if count < last_layer_index:
                 setattr(_, 'forward', bound_method)
             else:
-                _.hyperbolic_attn = Adapter_init(hidden_size, dim, dim_rot, curvature_ratio)
-                _.dp = nn.Dropout(_.attn.dropout)
-                _.s = s
-                count+=1
-                _.count = count
-                bound_method = oft_forward_vision_init.__get__(_, _.__class__)
                 setattr(_, 'forward_dense', bound_method)
         elif len(list(_.children())) != 0:
-            set_adapter_vision_hyperbolic(_, dim, dim_rot, hidden_size, length, s, count, curvature_ratio)
-    #print('count',count)
+            set_adapter_vision_hyperbolic(_, dim, dim_rot, hidden_size, s, count, curvature_ratio)
+    print('count',count)
