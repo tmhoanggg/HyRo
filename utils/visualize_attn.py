@@ -6,6 +6,9 @@ import cv2
 import os
 import clip  # Standard CLIP library for tokenizer
 
+import sys
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
+
 from detectron2.config import get_cfg
 from detectron2.modeling import build_model
 from detectron2.checkpoint import Checkpointer
@@ -27,6 +30,8 @@ def main():
     parser.add_argument("--input", required=True, help="Path to input image")
     parser.add_argument("--cls", required=True, help="Comma separated classes (e.g., 'cat,dog,tree')")
     parser.add_argument("--output", default="output_vis", help="Output directory")
+    parser.add_argument("--temperature", default=1, help="Temperature to reduce background noise (lower -> less noise)")
+    parser.add_argument("--threshold", default=100, help=r"Keep top [threshold]% of activation => remove low-confidence noise")
     args = parser.parse_args()
 
     # 1. Load Model
@@ -69,10 +74,19 @@ def main():
 
             # 6. Generate Similarity (Attention) Map
             similarity = torch.matmul(image_embeds, text_embeds.t()) 
+
+            # Apply Temperature-scaled Softmax to reduce background noise
+            similarity = F.softmax(similarity / args.temperature, dim=1)
+
             grid_size = int(np.sqrt(similarity.shape[1]))
             attn_map = similarity.view(grid_size, grid_size).cpu().numpy()
+            
 
             # 7. Post-Processing & Save
+            # Keep only the top 30% of activations (removes low-confidence noise)
+            threshold = np.percentile(attn_map, 100 - args.threshold)
+            attn_map[attn_map < threshold] = 0
+
             attn_map = (attn_map - attn_map.min()) / (attn_map.max() - attn_map.min() + 1e-8)
             attn_map_resized = cv2.resize(attn_map, (raw_image.shape[1], raw_image.shape[0]))
             
