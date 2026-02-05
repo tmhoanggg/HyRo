@@ -87,9 +87,7 @@ class CATSeg(nn.Module):
         # Count params
         trainable_params = 0
         for name, params in self.sem_seg_head.predictor.clip_model.named_parameters():
-            #if "visual" in name:
             if params.requires_grad == True:
-                print(name)
                 trainable_params += params.numel()
         print(f"trainable params: {trainable_params}")
 
