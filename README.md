@@ -26,7 +26,7 @@ You can download the model weights, install the required dependencies, and run t
 ```bash
 python demo/demo.py --config-file configs/vitb_384_hyperbolic.yaml --input path/to/input --output path/to/output --opts MODEL.WEIGHTS path/to/weights
 ```
-Alternatively, you can run the demo directly in Colab: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1uIWE5KbGFSjrxey2aRd5pWkKNY1_SaNq).
+Alternatively, you can run the demo directly in Colab: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1nb3YD5LHDO5d27KSnJFoI52dJ0-tt6rn?usp=sharing).
 
 
 ## Training
