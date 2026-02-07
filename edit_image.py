@@ -148,6 +148,9 @@ class CATSegDiffusionEditor:
             kernel = np.ones((dilate_pixels, dilate_pixels), np.uint8)
             mask_np = cv2.dilate(mask_np, kernel, iterations=1)
             print(f"Dilated mask by {dilate_pixels}px")
+
+        # Save binary mask BEFORE blurring
+        binary_mask = Image.fromarray(mask_np)  # Pure black and white
         
         # Blur edges for smooth transition
         if blur_kernel > 0:
@@ -157,7 +160,6 @@ class CATSegDiffusionEditor:
             mask_np = cv2.GaussianBlur(mask_np, (blur_kernel, blur_kernel), 0)
             print(f"Blurred mask edges with kernel size {blur_kernel}")
         
-        mask_np = (mask_np > 127).astype(np.uint8) * 255
         mask_img = Image.fromarray(mask_np)
         
         # Add better default negative prompt if not provided
@@ -178,11 +180,11 @@ class CATSegDiffusionEditor:
             strength=strength,
             guidance_scale=guidance_scale,
             num_inference_steps=num_inference_steps,
-            height=original_img.height,
-            width=original_img.width,
+            height=(original_img.height // 8) * 8,
+            width=(original_img.width // 8) * 8,
         ).images[0]
         
-        return edited_image, mask_img, original_img
+        return edited_image, binary_mask, original_img
 
     @torch.no_grad()
     def edit_everything_except(self, image_path, keep_classes, edit_prompt, negative_prompt="",
@@ -223,24 +225,25 @@ class CATSegDiffusionEditor:
             kernel = np.ones((abs(dilate_pixels), abs(dilate_pixels)), np.uint8)
             edit_mask = cv2.erode(edit_mask, kernel, iterations=1)
             print(f"Eroded protected area by {abs(dilate_pixels)}px to avoid edge artifacts")
-        
-        # Blur for smooth edges
+
+        # Save binary mask BEFORE blurring
+        binary_mask = Image.fromarray(edit_mask)  # Pure black and white
+
+        # Blur for smooth edges (for inpainting only)
         if blur_kernel > 0:
             if blur_kernel % 2 == 0:
                 blur_kernel += 1
             edit_mask = cv2.GaussianBlur(edit_mask, (blur_kernel, blur_kernel), 0)
             print(f"Blurred mask edges with kernel size {blur_kernel}")
-        
-        edit_mask = (edit_mask > 127).astype(np.uint8) * 255
 
-        mask_img = Image.fromarray(edit_mask)
+        mask_img_for_inpainting = Image.fromarray(edit_mask)  # Blurred version
         
         coverage = (edit_mask > 128).sum() / edit_mask.size * 100
         print(f"\nEditing {coverage:.2f}% of image (protecting {100-coverage:.2f}%)")
         
         # Add better default negative prompt
         if not negative_prompt:
-            negative_prompt = "blurry, low quality, distorted, deformed, ugly, artifacts, changed subject, different appearance"
+            negative_prompt = "blurry, low quality, distorted, deformed, ugly, same"
         
         print(f"\nGenerating edited image...")
         print(f"Prompt: {edit_prompt}")
@@ -251,13 +254,15 @@ class CATSegDiffusionEditor:
             prompt=edit_prompt,
             negative_prompt=negative_prompt,
             image=img,
-            mask_image=mask_img,
+            mask_image=mask_img_for_inpainting,
             strength=strength,
             guidance_scale=guidance_scale,
             num_inference_steps=num_inference_steps,
+            height=(img.height // 8) * 8,
+            width=(img.width // 8) * 8,
         ).images[0]
         
-        return edited_image, mask_img, img
+        return edited_image, binary_mask, img
 
 
 if __name__ == "__main__":
