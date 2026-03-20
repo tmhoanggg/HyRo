@@ -58,15 +58,15 @@
               </h3>
               
               <p class="authors is-size-5">
-                <a class="link" href="#">Hoang M. Truong</a>&emsp;&emsp;&emsp;
-                <a class="link" href="#">Hai Nguyen-Truong</a>&emsp;&emsp;&emsp;
-                <a class="link" href="#">Dang Huynh</a>
+                <a class="link" href="https://tmhoanggg.github.io/">Hoang M. Truong</a><sup>1</sup>&emsp;&emsp;
+                <a class="link" href="https://itruonghai.github.io/">Hai Nguyen-Truong</a><sup>2</sup>&emsp;&emsp;
+                <a class="link" href="#">Dang Huynh</a><sup>2</sup>
               </p>
 
               <div class="is-size-5 publication-authors">
-                <div class="author-block">University of Science, Viet Nam National University Ho Chi Minh City</div>
+                <div class="author-block"><sup>1</sup>University of Science, Viet Nam National University Ho Chi Minh City</div>
                 <br />
-                <div class="author-block">Fulbright University Vietnam</div>
+                <div class="author-block"><sup>2</sup>Fulbright University Vietnam</div>
               </div>
 
               <!-- <br />
@@ -112,7 +112,7 @@
                       <span>Paper</span>
                     </a>
                   </span> -->
-                  <!-- <span class="link-block">
+                  <span class="link-block">
                     <a href="https://arxiv.org/abs/2508.17595"
                        class="external-link button is-normal is-rounded is-dark" disabled>
                       <span class="icon">
@@ -120,7 +120,7 @@
                       </span>
                       <span>arXiv (Coming Soon)</span>
                     </a>
-                  </span> -->
+                  </span>
 <!--                   <span class="link-block">
                     <a
                       href="#"
@@ -184,6 +184,21 @@
       </div>
     </section>
 
+    <section class="hero is-light is-small">
+      <div class="hero-body">
+        <div class="container is-max-desktop">
+          <div class="columns is-centered has-text-centered">
+            <div class="column is-full-width">
+              <img src="static/images/hyro-teaser-withexample.png" alt="HyRo Teaser" style="max-width: 100%; height: auto; border-radius: 10px;"/>
+              <h2 class="subtitle has-text-justified mt-4 is-size-6">
+                HyRo rotates the text embeddings to achieve a smaller angle (&beta;) relative to the target image embeddings compared to the initial angle (&alpha;). This geometric adjustment enables the model to resolve semantic ambiguities and produce more accurate, fine-grained segmentations.
+              </h2>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
 
     <!-- Abstract. -->
     <section class="section">
@@ -207,22 +222,39 @@
     <!-- Method  -->
     <section class="section">
       <div class="container is-max-desktop">
-        <div class="columns is-centered">
-          <div class="column is-full-width has-text-justified">
-            <h2 class="title is-3 has-text-centered">Method</h2>
-            <div class="content has-text-centered">
-              <img
-                src="static/images/architecture_nhim.png"
-                class="inline-figure-six"
-                alt="HyRo Architecture."
-              />
+        <h2 class="title is-3 has-text-centered">Methodology</h2>
+
+        <div class="columns is-centered has-text-centered mt-5">
+          <div class="column is-full-width">
+            <img src="static/images/rotation_approach.png" alt="HyRo Rotation Approach" style="max-width: 70%; height: auto;"/>
+            <div class="content has-text-justified mt-4">
+              <p>
+                <strong>Hyperbolic Rotation (HyRo).</strong> Embeddings are rotated around the origin in hyperbolic space using an orthogonal block matrix to minimize the angle between visual and textual features while preserving their hyperbolic radii, thereby enhancing cross-modal semantic alignment.
+              </p>
             </div>
           </div>
         </div>
-        
-        <!-- <div class="columns">
-          
-        </div> -->
+
+        <br/>
+
+        <div class="columns is-centered has-text-centered mt-5">
+          <div class="column is-full-width">
+            <img src="static/images/architecture_nhim.png" alt="HyRo Overall Architecture" style="max-width: 100%; height: auto;"/>
+            <div class="content has-text-justified mt-4">
+              <p>
+                <strong>Overall Architecture.</strong> Given image and text inputs, Euclidean embeddings are mapped to the Poincaré ball via the exponential map. HyRo then decouples alignment into two stages:
+              </p>
+              <ul>
+                <li><strong>Hierarchical Adjustment:</strong> Uses block-diagonal radius scaling matrices to align granularity.</li>
+                <li><strong>Semantic Refinement:</strong> Uses orthogonal rotation matrices to adjust angular relationships without altering the radius.</li>
+              </ul>
+              <p>
+                The refined hyperbolic embeddings are mapped back to the tangent space for decoding.
+              </p>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
 
