@@ -60,6 +60,9 @@
               <h3 class="title is-2 publication-title">
                 Semantic Alignment in Hyperbolic Space for Open-Vocabulary Semantic Segmentation
               </h3>
+              <h5 class="subtitle is-4 publication-awards has-text-weight-bold mb-4">
+                CVPR Workshop 2026
+              </h5>
               
               <p class="authors is-size-5">
                 <a class="link" href="https://tmhoanggg.github.io/">Hoang M. Truong</a><sup>1</sup>&emsp;&emsp;
@@ -189,6 +192,42 @@
     </section>
 
     <!-- <section class="hero teaser"> -->
+    <section class="hero is-light is-small">
+      <div class="hero-body">
+        <div class="container is-max-desktop">
+          <div class="columns is-centered has-text-centered">
+            <div class="column is-10">
+              <img src="static/images/hyro-teaser-withexample.png" alt="HyRo Teaser" style="width: 100%; height: auto; border-radius: 10px;"/>
+              <h2 class="subtitle has-text-justified mt-4 is-size-6">
+                HyRo rotates the text embeddings to achieve a smaller angle (&beta;) relative to the target image embeddings compared to the initial angle (&alpha;). This geometric adjustment enables the model to resolve semantic ambiguities and produce more accurate, fine-grained segmentations.
+              </h2>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- Abstract. -->
+    <section class="section">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered has-text-centered">
+          <div class="column is-four-fifths">
+            <h2 class="title is-3">Abstract</h2>
+            <div class="content has-text-justified">
+              Open-vocabulary semantic segmentation requires adapting image-level vision-language models such as CLIP to dense pixel-level prediction, which is challenging due to the mismatch between hierarchical structure and semantic alignment. While recent works leverage hyperbolic geometry to model hierarchical relationships, they primarily focus on aligning hierarchical depth and overlook semantic misalignment among embeddings at the same level. In this work, we propose HyRo, a hyperbolic fine-tuning framework that decouples hierarchical and semantic alignment in the Poincar\'e ball model. HyRo adjusts the hyperbolic radius to match hierarchical levels and refines semantic relationships by optimizing angular alignment through an orthogonal transformation that is proven theoretically to preserve radius. Extensive experiments on standard open-vocabulary semantic segmentation benchmarks demonstrate that HyRo achieves competitive performance on standard benchmarks.
+              <!--/ Abstract. -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <!-- <div class="hr"></div> -->
+
+    <!-- Method  -->
     <section class="section">
       <div class="container is-max-desktop">
         <h2 class="title is-3 has-text-centered">Methodology</h2>
@@ -229,49 +268,6 @@
 
     <div class="hr"></div>
 
-    <!-- <div class="hr"></div> -->
-
-    <!-- Method  -->
-    <section class="section">
-      <div class="container is-max-desktop">
-        <h2 class="title is-3 has-text-centered">Methodology</h2>
-
-        <div class="columns is-centered has-text-centered mt-5">
-          <div class="column is-full-width">
-            <img src="static/images/method_rotation.png" alt="HyRo Rotation Approach" style="width: 85%; height: auto;"/>
-            <div class="content has-text-justified mt-4">
-              <p>
-                <strong>Hyperbolic Rotation (HyRo).</strong> Embeddings are rotated around the origin in hyperbolic space using an orthogonal block matrix to minimize the angle between visual and textual features while preserving their hyperbolic radii, thereby enhancing cross-modal semantic alignment.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <br/>
-
-        <div class="columns is-centered has-text-centered mt-5">
-          <div class="column is-full-width">
-            <img src="static/images/ovss-architecture.png" alt="HyRo Overall Architecture" style="width: 90%; height: auto;"/>
-            <div class="content has-text-justified mt-4">
-              <p>
-                <strong>Overall Architecture.</strong> Given image and text inputs, Euclidean embeddings are mapped to the Poincaré ball via the exponential map. HyRo then decouples alignment into two stages:
-              </p>
-              <ul>
-                <li><strong>Hierarchical Adjustment:</strong> Uses block-diagonal radius scaling matrices to align granularity.</li>
-                <li><strong>Semantic Refinement:</strong> Uses orthogonal rotation matrices to adjust angular relationships without altering the radius.</li>
-              </ul>
-              <p>
-                The refined hyperbolic embeddings are mapped back to the tangent space for decoding.
-              </p>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <div class="hr"></div>
-
     <!-- Qualitative Results -->
     <section class="section">
       <div class="container is-max-desktop">
@@ -279,7 +275,7 @@
           <div class="column is-10">
             <h2 class="title is-3 has-text-centered">Qualitative Results</h2>
             
-            <p class="subtitle is-6 mt-5 mb-1 ml-6">
+            <p class="subtitle is-6 mt-5 mb-1 ml-12">
               Results of a qualitative comparison on the ADE20K dataset include 847 categories.
             </p>
 
@@ -289,7 +285,7 @@
                   style="width: 100%; height: auto;">
             </div>
 
-            <p class="subtitle is-6 mt-5 mb-1 ml-6">
+            <p class="subtitle is-6 mt-5 mb-1 ml-12">
               Qualitative results on the ADE20K dataset with 847 categories.
             </p>
 
