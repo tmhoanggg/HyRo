@@ -1,15 +1,22 @@
-# Semantic Alignment in Hyperbolic Space for Open-Vocabulary Semantic Segmentation
+# Semantic Alignment in Hyperbolic Space for Open-Vocabulary Semantic Segmentation (CVPRW 2026 - PVUW)
 This is our official implementation of HyRo!
 
 [[Project Page](https://tmhoanggg.github.io/HyRo/)] [[Colab](https://colab.research.google.com/drive/1nb3YD5LHDO5d27KSnJFoI52dJ0-tt6rn?usp=sharing)]
 
 
 ## Overview
+
+<p align="center">
+  <img src="assets/intro.png" alt="Intro" width="700"/>
+</p>
+
+HyRo refines semantic alignment by rotating embeddings in hyperbolic space, reducing the angle between visual and textual features (from $\alpha$ to $\beta$). This geometric adjustment enables the model to resolve semantic ambiguities and produce more accurate, fine-grained segmentations.
+
 <p align="center">
   <img src="assets/architecture.png" alt="Architecture" width="700"/>
 </p>
 
-We introduce HyRo, a framework extending the hyperbolic radius adjustment from [HyperCLIP](https://github.com/SJTU-DeepVisionLab/HyperCLIP) by adding a hyperbolic rotation module, based on the hypothesis that semantic alignment may be mismatched after radius adjustment.
+We tackle semantic misalignment in open-vocabulary semantic segmentation by proposing (1) HyRo, a hyperbolic rotation module for angular refinement, and (2) a hyperbolic fine-tuning framework that decouples semantic alignment (angle) from hierarchical alignment (radius).
 
 
 ## Installation
